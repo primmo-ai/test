@@ -4,15 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.models import HealthResponse
+from app.state import ingestion_state
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
-
-ingestion_state = {
-    "status": "starting",
-    "documents_ingested": 0,
-    "chunks_indexed": 0,
-}
 
 
 @asynccontextmanager

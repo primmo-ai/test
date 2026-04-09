@@ -70,3 +70,130 @@ La conception de l'API (endpoints, format des requetes/reponses, architecture) e
 ## Duree
 
 Pour discussion 4-5 jours après réception du test.
+
+---
+
+# Solution technique
+
+## Lancement rapide
+
+```bash
+# 1. Configurer la clé API OpenRouter
+cp .env.example .env
+# Editer .env et renseigner OPENROUTER_API_KEY
+
+# 2. Lancer l'application
+make run
+# ou: docker compose up --build
+
+# 3. Attendre que l'ingestion soit terminée (suivre les logs)
+# Le health check indique "ready" quand c'est prêt :
+curl http://localhost:8000/api/health
+```
+
+## Architecture
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│   Client     │────>│  FastAPI App  │────>│  OpenRouter  │
+│  (curl/UI)   │<────│              │<────│ Claude 3.5   │
+└─────────────┘     │              │     │  Sonnet      │
+                    │  ┌────────┐  │     └─────────────┘
+                    │  │Metrics │  │
+                    │  │(SQLite)│  │
+                    │  └────────┘  │
+                    │       │      │
+                    │  ┌────v────┐ │
+                    │  │ Qdrant  │ │
+                    │  │(vectors)│ │
+                    │  └─────────┘ │
+                    └──────────────┘
+```
+
+**Flux d'une requete** : Question utilisateur -> extraction de filtres (dossier, type doc, noms) -> recherche vectorielle Qdrant -> construction du contexte -> appel LLM via OpenRouter -> reponse avec sources et metriques.
+
+### Composants
+
+| Composant | Technologie | Role |
+|-----------|------------|------|
+| API | FastAPI | Endpoints REST, validation, health check |
+| LLM | Claude 3.5 Sonnet via OpenRouter | Generation des reponses |
+| Embedding | `intfloat/multilingual-e5-base` (local) | Vectorisation des documents et requetes |
+| Vector DB | Qdrant | Stockage et recherche vectorielle avec filtres metadata |
+| Metriques | SQLite | Tracking cout, latence, tokens par requete |
+
+## Endpoints
+
+### `POST /api/query` -- Poser une question
+
+```bash
+curl -X POST http://localhost:8000/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Qui sont les vendeurs du dossier 1?"}'
+```
+
+Parametres optionnels : `dossier` (forcer un dossier), `doc_types` (filtrer par type).
+
+Reponse : `answer` + `sources` (documents utilises) + `metrics` (latence, tokens, cout).
+
+### `GET /api/documents` -- Lister les documents ingeres
+
+### `GET /api/metrics` -- Statistiques d'utilisation
+
+Retourne le nombre de requetes, latence moyenne, cout total, budget restant.
+
+### `GET /api/health` -- Etat du service
+
+Retourne le statut d'ingestion (`ingesting`/`ready`/`error`), nombre de documents et chunks.
+
+## Choix techniques et arbitrages
+
+### Embedding local vs API
+
+**Choix** : `intfloat/multilingual-e5-base` execute localement dans le conteneur Docker.
+
+**Pourquoi** : Gratuit (pas de cout par requete), pas de dependance externe au-dela d'OpenRouter, excellent support du francais. Le modele E5 est specifiquement entraine pour le retrieval (prefixes `query:`/`passage:`) ce qui donne une meilleure qualite de recherche que des modeles generalistes. Avec seulement ~60 chunks, meme le modele base est largement suffisant.
+
+**Arbitrage** : Le modele `large` (1024 dims) aurait donne des embeddings legerement meilleurs mais double la taille de l'image Docker. Pour 60 chunks, la difference de qualite est negligeable.
+
+### Classification par regles vs LLM
+
+**Choix** : Classification basee sur des patterns regex dans les headers des documents.
+
+**Pourquoi** : Les documents OCR ont des headers clairs (`COMPROMIS DE VENTE`, `CARTE NATIONALE D'IDENTITE`, `EDF`, etc.). Utiliser un LLM pour classifier couterait du budget et ajouterait de la latence sans ameliorer la precision. Les regles gerent meme les erreurs OCR (`CARTE MATIONALE D'IDTITE`).
+
+### Chunking par articles (compromis) vs taille fixe
+
+**Choix** : Decoupage semantique par section `ARTICLE N` pour les compromis de vente, document entier pour les petits documents.
+
+**Pourquoi** : Les compromis font ~6000 caracteres avec 13 articles bien structures. Un chunking par taille fixe couperait au milieu d'un article et perdrait le contexte juridique. Chaque chunk d'article est prefixe avec les noms des parties (vendeur/acquereur) pour maintenir le contexte meme en isolation.
+
+### Strategie de retrieval
+
+**Choix** : Analyse de requete (regex) pour extraire des filtres + recherche vectorielle filtree + fallback sans filtre.
+
+**Pourquoi** :
+- Les questions mentionnent souvent un dossier specifique -> filtre Qdrant pour la precision
+- Les questions cross-dossier ("Dans quel dossier M. X est-il vendeur?") -> fallback sans filtre si trop peu de resultats
+- Les questions de coherence ("Y a-t-il des incoherences?") -> recuperation de TOUS les chunks du dossier pour que le LLM voie l'ensemble
+
+### SQLite pour les metriques vs time-series DB
+
+**Choix** : SQLite avec un fichier persiste via volume Docker.
+
+**Pourquoi** : Pas de service supplementaire a gerer, suffisant pour le volume attendu (~centaines de requetes). Les requetes d'agregation sont simples (COUNT, AVG, SUM).
+
+### Cout estime
+
+~1.2 centimes par requete avec Claude 3.5 Sonnet (~2000 tokens input, ~500 output). Le budget de 20 EUR permet ~1500 requetes.
+
+## Pistes d'amelioration
+
+- **Re-ranking** : Ajouter un modele de re-ranking (ex: `cross-encoder/ms-marco-MiniLM-L-6-v2`) apres la recherche vectorielle pour ameliorer la precision du top-k.
+- **Evaluation automatique** : Implementer un benchmark avec des paires question/reponse attendue et mesurer automatiquement la pertinence (RAGAS, LLM-as-judge).
+- **Streaming** : Utiliser le streaming SSE pour les reponses longues au lieu d'attendre la reponse complete.
+- **Cache** : Cacher les reponses pour les questions frequentes (meme embedding -> meme contexte -> meme reponse).
+- **UI** : Ajouter une interface web minimale (Gradio ou Streamlit) pour faciliter les demos.
+- **OCR quality gate** : Rejeter ou flagger les documents avec un score OCR trop bas au lieu de les inclure silencieusement.
+- **Multi-turn** : Ajouter un historique de conversation pour permettre des follow-up questions ("Et pour le dossier 2?").
+- **Observabilite** : Prometheus + Grafana pour monitorer les metriques en production plutot que SQLite.

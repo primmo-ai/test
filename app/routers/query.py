@@ -3,11 +3,10 @@ import time
 
 from fastapi import APIRouter, HTTPException
 
-from app.main import ingestion_state
+from app.state import ingestion_state
 from app.metrics.tracker import log_query
 from app.models import QueryMetrics, QueryRequest, QueryResponse, Source
 from app.rag.chain import query_llm
-from app.rag.embeddings import embed_query
 from app.rag.retriever import retrieve
 
 logger = logging.getLogger(__name__)
