@@ -18,9 +18,10 @@ ingestion_state = {
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.ingestion.pipeline import run_ingestion
-    from app.rag.vectorstore import collection_exists
+    from app.metrics.tracker import init_db
 
     logger.info("Starting application...")
+    init_db()
     ingestion_state["status"] = "ingesting"
 
     try:
@@ -47,6 +48,12 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+from app.routers import documents, metrics, query  # noqa: E402
+
+app.include_router(query.router)
+app.include_router(documents.router)
+app.include_router(metrics.router)
 
 
 @app.get("/api/health", response_model=HealthResponse)
