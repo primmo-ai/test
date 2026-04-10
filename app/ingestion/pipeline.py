@@ -35,7 +35,8 @@ def run_ingestion() -> dict:
 
     # Create collection
     model = get_model()
-    vector_size = model.get_embedding_dimension()
+    dim_fn = getattr(model, "get_embedding_dimension", None) or model.get_sentence_embedding_dimension
+    vector_size = dim_fn()
     create_collection(vector_size)
 
     # Embed and upsert in batches

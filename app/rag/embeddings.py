@@ -14,7 +14,8 @@ def get_model() -> SentenceTransformer:
     if _model is None:
         logger.info("Loading embedding model: %s", settings.embedding_model)
         _model = SentenceTransformer(settings.embedding_model)
-        logger.info("Embedding model loaded (dim=%d)", _model.get_embedding_dimension())
+        dim_fn = getattr(_model, "get_embedding_dimension", None) or _model.get_sentence_embedding_dimension
+        logger.info("Embedding model loaded (dim=%d)", dim_fn())
     return _model
 
 
