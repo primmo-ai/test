@@ -1,0 +1,6 @@
+services:
+  app:
+    environment:
+      - OPENROUTER_API_KEY=not-needed
+      - OPENROUTER_BASE_URL=http://host.docker.internal:11434/v1
+      - OPENROUTER_MODEL=mistral

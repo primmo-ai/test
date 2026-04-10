@@ -77,17 +77,23 @@ Pour discussion 4-5 jours après réception du test.
 
 ## Lancement rapide
 
+**Avec OpenRouter (Claude 3.5 Sonnet) :**
+
 ```bash
-# 1. Configurer la clé API OpenRouter
 cp .env.example .env
 # Editer .env et renseigner OPENROUTER_API_KEY
-
-# 2. Lancer l'application
 make run
-# ou: docker compose up --build
+```
 
-# 3. Attendre que l'ingestion soit terminée (suivre les logs)
-# Le health check indique "ready" quand c'est prêt :
+**Avec Ollama (test local, gratuit) :**
+
+```bash
+ollama pull mistral
+make run-ollama
+```
+
+Attendre que les logs affichent `Ingestion complete`. Le health check indique `ready` quand c'est pret :
+```bash
 curl http://localhost:8000/api/health
 ```
 

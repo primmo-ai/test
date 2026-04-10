@@ -68,7 +68,7 @@ Question : {question}"""
 
     start = time.monotonic()
 
-    with httpx.Client(timeout=60.0) as client:
+    with httpx.Client(timeout=120.0) as client:
         response = client.post(
             f"{settings.openrouter_base_url}/chat/completions",
             headers={
