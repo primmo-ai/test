@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from app.state import ingestion_state
 from app.metrics.tracker import log_query
 from app.models import QueryMetrics, QueryRequest, QueryResponse, Source
-from app.rag.chain import query_llm
+from app.rag.chain import LLMTimeoutError, query_llm
 from app.rag.retriever import retrieve
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,10 @@ async def query(request: QueryRequest):
         raise HTTPException(status_code=404, detail="Aucun document pertinent trouvé")
 
     # Query LLM
-    llm_response = query_llm(request.question, chunks)
+    try:
+        llm_response = query_llm(request.question, chunks)
+    except LLMTimeoutError as e:
+        raise HTTPException(status_code=504, detail=str(e))
 
     total_ms = int((time.monotonic() - start) * 1000)
     embedding_ms = retrieval_ms  # embedding is part of retrieval

@@ -8,6 +8,11 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+
+class LLMTimeoutError(Exception):
+    pass
+
+
 SYSTEM_PROMPT = """Tu es un assistant spécialisé dans l'analyse de dossiers notariaux de vente immobilière.
 Tu réponds aux questions des notaires et collaborateurs en te basant UNIQUEMENT sur les documents fournis.
 
@@ -68,23 +73,29 @@ Question : {question}"""
 
     start = time.monotonic()
 
-    with httpx.Client(timeout=120.0) as client:
-        response = client.post(
-            f"{settings.openrouter_base_url}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {settings.openrouter_api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": settings.openrouter_model,
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_message},
-                ],
-                "temperature": 0,
-            },
-        )
-        response.raise_for_status()
+    timeout = httpx.Timeout(connect=10.0, read=300.0, write=10.0, pool=10.0)
+    try:
+        with httpx.Client(timeout=timeout) as client:
+            response = client.post(
+                f"{settings.openrouter_base_url}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {settings.openrouter_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": settings.openrouter_model,
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": user_message},
+                    ],
+                    "temperature": 0,
+                },
+            )
+            response.raise_for_status()
+    except httpx.ReadTimeout:
+        elapsed_ms = int((time.monotonic() - start) * 1000)
+        logger.error("LLM request timed out after %d ms", elapsed_ms)
+        raise LLMTimeoutError(f"Le LLM n'a pas répondu dans le délai imparti ({elapsed_ms}ms)")
 
     elapsed_ms = int((time.monotonic() - start) * 1000)
     data = response.json()
