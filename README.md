@@ -252,7 +252,11 @@ Ci-dessous les ameliorations prioritaires pour une mise en production, classees 
 
 ### Haute priorite
 
-- **Evaluation automatique** : Creer un jeu de paires question/reponse de reference et mesurer la pertinence avec RAGAS ou LLM-as-judge. Indispensable pour valider les evolutions du RAG sans regression.
+- **Evaluation automatique** : Un pipeline d'evaluation offline est concu (voir `docs/specs/2026-04-12-evaluation-pipeline-design.md`). Il comprend un dataset de reference (queries + sources attendues), un script de generation, et une suite pytest mesurant recall, precision et MRR sur le retriever — sans cout LLM. La couche 2 (evaluation end-to-end avec LLM-as-judge via RAGAS ou LangSmith) est documentee comme etape suivante dans le spec.
+
+  **Seuils d'evaluation** :
+  - *Context Recall >= 0.8* : Metrique critique. Si le systeme ne retrouve pas les bons documents, le LLM ne peut pas produire de reponse correcte. 0.8 tolere 1 source manquante sur 5, mais pas des echecs systematiques. Pour un outil notarial, manquer un document pertinent (ex: une piece d'identite expiree) pourrait signifier rater un probleme de conformite.
+  - *Context Precision >= 0.5* : Intentionnellement plus souple. La recherche semantique remonte naturellement des chunks tangentiellement lies. Avec top-k=8, obtenir 4+ chunks pertinents sur 8 est un seuil raisonnable. Le LLM peut ignorer le contexte non pertinent — du contexte en trop est moins grave que de l'information manquante.
 - **Streaming SSE** : Les reponses longues (~75s avec Ollama, ~2s avec Claude) beneficieraient d'un streaming pour ameliorer l'UX. FastAPI supporte nativement `StreamingResponse`.
 - **Multi-turn** : Ajouter un historique de conversation pour les follow-ups ("Et pour le dossier 2?"). Stocker les derniers messages et les inclure dans le contexte LLM.
 
@@ -266,5 +270,25 @@ Ci-dessous les ameliorations prioritaires pour une mise en production, classees 
 
 - **UI web** : Interface Gradio ou Streamlit pour les demos et l'usage quotidien des collaborateurs.
 - **Observabilite** : Prometheus + Grafana pour le monitoring, OpenTelemetry pour le tracing distribue.
-- **Auth** : Ajouter une authentification (API key ou OAuth) pour securiser les endpoints.
 - **Batch ingestion** : Supporter l'ajout de nouveaux dossiers sans redemarrer le service.
+
+### Isolation multi-tenant et controle d'acces
+
+En production, les documents d'une etude notariale ne doivent etre accessibles qu'aux utilisateurs autorises. Cela necessite deux couches : authentification et isolation des donnees.
+
+**Authentification — JWT obligatoire sur tous les endpoints :**
+
+Chaque requete porte un token Bearer JWT contenant les claims `client_id` (etude notariale) et `user_id` (collaborateur). L'API valide la signature du token et en extrait les claims. Le `client_id` determine le perimetre d'acces aux donnees ; le `user_id` est enregistre dans les metriques pour la tracabilite (qui a interroge quoi). Le choix de l'emetteur de tokens (Auth0, Keycloak, custom) est laisse ouvert — l'API valide contre un endpoint JWKS ou un secret partage configurable.
+
+**Isolation des donnees — deux approches possibles :**
+
+| | Isolation logique (filtrage) | Isolation physique (collection par client) |
+|---|---|---|
+| **Principe** | Une seule collection Qdrant. `client_id` ajoute au payload de chaque chunk avec un index KEYWORD. Chaque requete est automatiquement filtree par `client_id`. | Une collection Qdrant par client : `notarial_{client_id}`. Aucun filtre ne peut fuiter entre clients car les collections sont separees. |
+| **Avantages** | Simple a operer : une collection, un index, un pipeline d'ingestion. | Garantie forte — un bug de filtre ne peut pas exposer les donnees d'un autre client. |
+| **Risques** | Un bug dans la logique de filtrage pourrait exposer des documents entre clients. Attenuable par un middleware qui enforce le filtre au niveau vectorstore. | Complexite operationnelle : cycle de vie des collections, gestion des index par client, monitoring par collection. |
+| **Quand l'utiliser** | Premier pas recommande pour un MVP. | Si les exigences legales ou de conformite imposent une isolation stricte. |
+
+**Recommandation** : commencer par l'isolation logique pour la simplicite et la rapidite de mise en oeuvre, puis migrer vers l'isolation physique si les exigences de conformite l'imposent. La couche API est identique dans les deux cas — seul le routage vectorstore change.
+
+**Ce qui ne change pas** : logique de retrieval, chunking, embedding, chaine LLM. Le schema de requete/reponse reste identique (pas de champ `client_id` dans le body — il est derive du token).
