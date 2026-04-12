@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     # RAG
     retrieval_top_k: int = 8
+    max_context_chunks: int = 15
 
     # Documents
     documents_path: str = "/app/documents"

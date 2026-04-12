@@ -3,6 +3,7 @@ import time
 
 from fastapi import APIRouter, HTTPException
 
+from app.config import settings
 from app.state import ingestion_state
 from app.metrics.tracker import log_query
 from app.models import QueryMetrics, QueryRequest, QueryResponse, Source
@@ -33,9 +34,12 @@ async def query(request: QueryRequest):
     if not chunks:
         raise HTTPException(status_code=404, detail="Aucun document pertinent trouvé")
 
+    # Cap context size to avoid LLM timeouts
+    llm_chunks = chunks[: settings.max_context_chunks]
+
     # Query LLM
     try:
-        llm_response = query_llm(request.question, chunks)
+        llm_response = query_llm(request.question, llm_chunks)
     except LLMTimeoutError as e:
         raise HTTPException(status_code=504, detail=str(e))
 

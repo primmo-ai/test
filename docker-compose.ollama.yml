@@ -6,3 +6,4 @@ services:
       - OPENROUTER_BASE_URL=http://localhost:11434/v1
       - OPENROUTER_MODEL=mistral
       - QDRANT_HOST=localhost
+      - MAX_CONTEXT_CHUNKS=12
