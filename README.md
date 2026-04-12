@@ -314,3 +314,22 @@ Chaque requete porte un token Bearer JWT contenant les claims `client_id` (etude
 **Recommandation** : commencer par l'isolation logique pour la simplicite et la rapidite de mise en oeuvre, puis migrer vers l'isolation physique si les exigences de conformite l'imposent. La couche API est identique dans les deux cas — seul le routage vectorstore change.
 
 **Ce qui ne change pas** : logique de retrieval, chunking, embedding, chaine LLM. Le schema de requete/reponse reste identique (pas de champ `client_id` dans le body — il est derive du token).
+
+### Architecture agentique
+
+Actuellement, le systeme est un pipeline RAG single-shot : question → retrieval → LLM → reponse. Il n'y a pas de selection d'outil ni de raisonnement multi-etapes. L'etape suivante est de passer a un agent capable de choisir quel(s) outil(s) invoquer en fonction de l'intention de l'utilisateur.
+
+**Boucle agent — pattern ReAct via LangChain/LangGraph :**
+
+L'agent recoit la requete utilisateur, raisonne sur le(s) outil(s) a appeler, execute, observe le resultat, et itere jusqu'a obtenir une reponse complete. LangGraph permet de modeliser cette boucle comme un graphe d'etats avec des points de controle (validation humaine, retry, branchement conditionnel).
+
+**Jeu d'outils initial :**
+
+| Outil | Description | Exemple de declencheur |
+|---|---|---|
+| `rag_search` | Le pipeline de retrieval actuel, encapsule comme outil. Recherche dans les documents et retourne des reponses sourcees. | "Qui sont les vendeurs du dossier 1?" |
+| `mail_draft` | Redige un courrier professionnel a partir du contenu d'un dossier. Utilise `rag_search` en interne pour ancrer l'email dans les documents reels. | "Redige un courrier de relance pour les pieces manquantes du dossier 3" |
+
+**Extensibilite** : chaque outil implemente une interface standard (nom, description, schema d'entree, fonction d'execution) et s'enregistre aupres de l'agent. Ajouter un nouvel outil ne modifie pas la logique d'orchestration. Candidats futurs : generation de checklist de conformite, resume de dossier, suivi des echeances, comparaison inter-dossiers.
+
+**Coexistence avec l'API actuelle** : un nouveau endpoint `POST /api/agent` gere les interactions multi-outils. L'endpoint existant `POST /api/query` reste disponible comme chemin RAG-only rapide et previsible. Les consommateurs choisissent le niveau de complexite dont ils ont besoin.
