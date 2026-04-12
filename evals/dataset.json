@@ -1,0 +1,242 @@
+[
+  {
+    "id": "targeted_vendeurs_d1",
+    "question": "Qui sont les vendeurs du dossier 1?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_1", "filename": "compromis.json", "section": "preambule"}
+    ],
+    "expected_facts": ["MOREAU"],
+    "dossier_filter": "dossier_1",
+    "doc_type_filter": null
+  },
+  {
+    "id": "targeted_acheteurs_d1",
+    "question": "Qui sont les acheteurs du dossier 1?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_1", "filename": "compromis.json", "section": "preambule"}
+    ],
+    "expected_facts": ["LAURENT"],
+    "dossier_filter": "dossier_1",
+    "doc_type_filter": null
+  },
+  {
+    "id": "targeted_vendeurs_d2",
+    "question": "Qui sont les vendeurs du dossier 2?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_2", "filename": "compromis_vente.json", "section": "preambule"}
+    ],
+    "expected_facts": ["DUBOIS"],
+    "dossier_filter": "dossier_2",
+    "doc_type_filter": null
+  },
+  {
+    "id": "targeted_acheteurs_d3",
+    "question": "Qui sont les acheteurs du dossier 3?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_3", "filename": "scan_012.json", "section": "preambule"}
+    ],
+    "expected_facts": ["FONTAINE"],
+    "dossier_filter": "dossier_3",
+    "doc_type_filter": null
+  },
+  {
+    "id": "targeted_bien_paris",
+    "question": "Quel est le bien concerné par la transaction de Paris?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_1", "filename": "compromis.json", "section": "article_1_designation_du_bien"}
+    ],
+    "expected_facts": ["Paris", "Lilas"],
+    "dossier_filter": null,
+    "doc_type_filter": null
+  },
+  {
+    "id": "targeted_bien_bordeaux",
+    "question": "Quel est le bien concerné par la transaction de Bordeaux?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_2", "filename": "compromis_vente.json", "section": "article_1_designation_du_bien"}
+    ],
+    "expected_facts": ["Bordeaux", "Medoc"],
+    "dossier_filter": null,
+    "doc_type_filter": null
+  },
+  {
+    "id": "targeted_bien_lyon",
+    "question": "Quel est le bien concerné par la transaction de Lyon?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_3", "filename": "scan_012.json", "section": "article_1_designation_du_bien"}
+    ],
+    "expected_facts": ["Lyon", "Republique"],
+    "dossier_filter": null,
+    "doc_type_filter": null
+  },
+  {
+    "id": "targeted_dpe_d1",
+    "question": "Le DPE est-il présent dans le dossier 1?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_1", "filename": "diag_dpe.json"}
+    ],
+    "expected_facts": ["diagnostic", "energie"],
+    "dossier_filter": "dossier_1",
+    "doc_type_filter": null
+  },
+  {
+    "id": "targeted_dpe_d2",
+    "question": "Le DPE correspond-il au bien du dossier 2?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_2", "filename": "dpe_bien.json"}
+    ],
+    "expected_facts": ["diagnostic", "energie"],
+    "dossier_filter": "dossier_2",
+    "doc_type_filter": null
+  },
+  {
+    "id": "targeted_identite_d1",
+    "question": "Les pièces d'identité sont-elles en ordre dans le dossier 1?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_1", "filename": "piece_identite_3.json"},
+      {"dossier": "dossier_1", "filename": "scan_id_001.json"}
+    ],
+    "expected_facts": ["identite"],
+    "dossier_filter": "dossier_1",
+    "doc_type_filter": null
+  },
+  {
+    "id": "targeted_justif_domicile_d1",
+    "question": "Les justificatifs de domicile sont-ils conformes dans le dossier 1?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_1", "filename": "facture_edf_02.json"},
+      {"dossier": "dossier_1", "filename": "avis_imposition.json"}
+    ],
+    "expected_facts": ["domicile"],
+    "dossier_filter": "dossier_1",
+    "doc_type_filter": null
+  },
+  {
+    "id": "targeted_justif_domicile_d2",
+    "question": "Les justificatifs de domicile sont-ils conformes dans le dossier 2?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_2", "filename": "justif_domicile_1.json"},
+      {"dossier": "dossier_2", "filename": "justif_domicile_2.json"}
+    ],
+    "expected_facts": ["domicile"],
+    "dossier_filter": "dossier_2",
+    "doc_type_filter": null
+  },
+  {
+    "id": "cross_dossier_moreau",
+    "question": "Dans quel dossier monsieur MOREAU est-il vendeur?",
+    "category": "cross_dossier",
+    "expected_sources": [
+      {"dossier": "dossier_1", "filename": "compromis.json", "section": "preambule"}
+    ],
+    "expected_facts": ["MOREAU", "dossier_1"],
+    "dossier_filter": null,
+    "doc_type_filter": null
+  },
+  {
+    "id": "cross_dossier_dubois",
+    "question": "Dans quel dossier madame DUBOIS est-elle vendeuse?",
+    "category": "cross_dossier",
+    "expected_sources": [
+      {"dossier": "dossier_2", "filename": "compromis_vente.json", "section": "preambule"}
+    ],
+    "expected_facts": ["DUBOIS", "dossier_2"],
+    "dossier_filter": null,
+    "doc_type_filter": null
+  },
+  {
+    "id": "cross_dossier_fontaine",
+    "question": "Dans quel dossier monsieur FONTAINE est-il acheteur?",
+    "category": "cross_dossier",
+    "expected_sources": [
+      {"dossier": "dossier_3", "filename": "scan_012.json", "section": "preambule"}
+    ],
+    "expected_facts": ["FONTAINE", "dossier_3"],
+    "dossier_filter": null,
+    "doc_type_filter": null
+  },
+  {
+    "id": "cross_dossier_benali",
+    "question": "M. BENALI achète dans quelle ville?",
+    "category": "cross_dossier",
+    "expected_sources": [
+      {"dossier": "dossier_2", "filename": "compromis_vente.json", "section": "preambule"}
+    ],
+    "expected_facts": ["BENALI", "Bordeaux"],
+    "dossier_filter": null,
+    "doc_type_filter": null
+  },
+  {
+    "id": "coherence_d1",
+    "question": "Y a-t-il des incohérences entre les documents du dossier 1?",
+    "category": "coherence",
+    "expected_sources": [
+      {"dossier": "dossier_1", "filename": "compromis.json", "section": "preambule"},
+      {"dossier": "dossier_1", "filename": "piece_identite_3.json"},
+      {"dossier": "dossier_1", "filename": "facture_edf_02.json"}
+    ],
+    "expected_facts": ["MOREAU", "LAURENT"],
+    "dossier_filter": null,
+    "doc_type_filter": null
+  },
+  {
+    "id": "coherence_d2",
+    "question": "Les documents du dossier 2 sont-ils conformes?",
+    "category": "coherence",
+    "expected_sources": [
+      {"dossier": "dossier_2", "filename": "compromis_vente.json", "section": "preambule"},
+      {"dossier": "dossier_2", "filename": "piece_id_vendeuse.json"},
+      {"dossier": "dossier_2", "filename": "dpe_bien.json"}
+    ],
+    "expected_facts": ["DUBOIS", "BENALI"],
+    "dossier_filter": null,
+    "doc_type_filter": null
+  },
+  {
+    "id": "coherence_d3",
+    "question": "Y a-t-il des incohérences dans le dossier 3?",
+    "category": "coherence",
+    "expected_sources": [
+      {"dossier": "dossier_3", "filename": "scan_012.json", "section": "preambule"},
+      {"dossier": "dossier_3", "filename": "id_vendeuse.json"},
+      {"dossier": "dossier_3", "filename": "scan_006.json"}
+    ],
+    "expected_facts": ["PETIT", "FONTAINE"],
+    "dossier_filter": null,
+    "doc_type_filter": null
+  },
+  {
+    "id": "edge_low_ocr_d3",
+    "question": "Quelle est la pièce d'identité d'Alexandre FONTAINE dans le dossier 3?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_3", "filename": "scan_006.json"}
+    ],
+    "expected_facts": ["FONTAINE"],
+    "dossier_filter": "dossier_3",
+    "doc_type_filter": null
+  },
+  {
+    "id": "edge_prix_vente_d1",
+    "question": "Quel est le prix de vente dans le dossier 1?",
+    "category": "targeted",
+    "expected_sources": [
+      {"dossier": "dossier_1", "filename": "compromis.json", "section": "article_2_prix"}
+    ],
+    "expected_facts": ["prix"],
+    "dossier_filter": "dossier_1",
+    "doc_type_filter": null
+  }
+]
