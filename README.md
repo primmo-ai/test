@@ -270,7 +270,29 @@ Ci-dessous les ameliorations prioritaires pour une mise en production, classees 
 
 - **UI web** : Interface Gradio ou Streamlit pour les demos et l'usage quotidien des collaborateurs.
 - **Observabilite** : Prometheus + Grafana pour le monitoring, OpenTelemetry pour le tracing distribue.
-- **Batch ingestion** : Supporter l'ajout de nouveaux dossiers sans redemarrer le service.
+
+### Ingestion robuste : bulk et incrementale
+
+Actuellement, l'ingestion se fait au demarrage du service : tous les documents du repertoire `documents/` sont parses, chunks, embeddes et indexes dans Qdrant. Ce mode synchrone est adapte au prototype mais ne passe pas a l'echelle.
+
+**Deux modes d'ingestion necessaires :**
+
+| | Bulk (setup initial) | Incrementale (ajout courant) |
+|---|---|---|
+| **Declencheur** | Premier deploiement, migration, re-indexation complete | Un collaborateur ajoute un nouveau scan a un dossier |
+| **Volume** | Des centaines de documents d'un coup | 1 a quelques documents a la fois |
+| **Contrainte** | Throughput — traiter le volume en temps raisonnable | Latence — le document doit etre interrogeable rapidement |
+| **Strategie** | Traitement par lots avec parallelisme (batch embedding, upsert groupes) | Traitement unitaire declenche par evenement |
+
+**Architecture cible — decouplage par file de messages :**
+
+1. **Producteur** : un endpoint API (`POST /api/documents/ingest`) ou un watcher filesystem depose un message dans une file (document path + metadata).
+2. **File de messages** : decouple la reception du traitement. Permet de gerer les pics (bulk) sans bloquer l'API. Le choix de technologie (Redis, RabbitMQ, SQS, ou simple `asyncio.Queue` en process) depend de l'echelle et des contraintes d'infra.
+3. **Worker** : consomme la file, execute le pipeline (parse → classify → chunk → embed → upsert). Idempotent — re-traiter un document deja indexe le remplace sans duplication (upsert par hash du contenu).
+
+**Idempotence et deduplication** : chaque chunk est identifie par un hash deterministe (dossier + filename + section). Un re-ingestion du meme document ecrase les chunks existants. Cela permet de re-indexer sans risque de doublons et de gerer les mises a jour de documents (nouveau scan OCR de meilleure qualite).
+
+**Ce qui change par rapport a aujourd'hui** : l'ingestion sort du lifespan FastAPI et devient un processus independant. L'API ne fait plus que lire Qdrant ; l'ecriture est geree par les workers. Le health endpoint (`/api/health`) reporte le statut d'ingestion via un etat partage (Redis, base, ou flag fichier).
 
 ### Isolation multi-tenant et controle d'acces
 
