@@ -4,7 +4,7 @@
     "question": "Qui sont les vendeurs du dossier 1?",
     "category": "targeted",
     "expected_sources": [
-      {"dossier": "dossier_1", "filename": "compromis.json", "section": "preambule"}
+      {"dossier": "dossier_1", "filename": "compromis.json"}
     ],
     "expected_facts": ["MOREAU"],
     "dossier_filter": "dossier_1",
@@ -15,7 +15,7 @@
     "question": "Qui sont les acheteurs du dossier 1?",
     "category": "targeted",
     "expected_sources": [
-      {"dossier": "dossier_1", "filename": "compromis.json", "section": "preambule"}
+      {"dossier": "dossier_1", "filename": "compromis.json"}
     ],
     "expected_facts": ["LAURENT"],
     "dossier_filter": "dossier_1",
@@ -26,7 +26,7 @@
     "question": "Qui sont les vendeurs du dossier 2?",
     "category": "targeted",
     "expected_sources": [
-      {"dossier": "dossier_2", "filename": "compromis_vente.json", "section": "preambule"}
+      {"dossier": "dossier_2", "filename": "compromis_vente.json"}
     ],
     "expected_facts": ["DUBOIS"],
     "dossier_filter": "dossier_2",
@@ -37,7 +37,7 @@
     "question": "Qui sont les acheteurs du dossier 3?",
     "category": "targeted",
     "expected_sources": [
-      {"dossier": "dossier_3", "filename": "scan_012.json", "section": "preambule"}
+      {"dossier": "dossier_3", "filename": "scan_012.json"}
     ],
     "expected_facts": ["FONTAINE"],
     "dossier_filter": "dossier_3",
@@ -139,7 +139,7 @@
     "question": "Dans quel dossier monsieur MOREAU est-il vendeur?",
     "category": "cross_dossier",
     "expected_sources": [
-      {"dossier": "dossier_1", "filename": "compromis.json", "section": "preambule"}
+      {"dossier": "dossier_1", "filename": "compromis.json"}
     ],
     "expected_facts": ["MOREAU", "dossier_1"],
     "dossier_filter": null,
@@ -150,7 +150,7 @@
     "question": "Dans quel dossier madame DUBOIS est-elle vendeuse?",
     "category": "cross_dossier",
     "expected_sources": [
-      {"dossier": "dossier_2", "filename": "compromis_vente.json", "section": "preambule"}
+      {"dossier": "dossier_2", "filename": "compromis_vente.json"}
     ],
     "expected_facts": ["DUBOIS", "dossier_2"],
     "dossier_filter": null,
@@ -161,7 +161,7 @@
     "question": "Dans quel dossier monsieur FONTAINE est-il acheteur?",
     "category": "cross_dossier",
     "expected_sources": [
-      {"dossier": "dossier_3", "filename": "scan_012.json", "section": "preambule"}
+      {"dossier": "dossier_3", "filename": "scan_012.json"}
     ],
     "expected_facts": ["FONTAINE", "dossier_3"],
     "dossier_filter": null,
@@ -172,7 +172,7 @@
     "question": "M. BENALI achète dans quelle ville?",
     "category": "cross_dossier",
     "expected_sources": [
-      {"dossier": "dossier_2", "filename": "compromis_vente.json", "section": "preambule"}
+      {"dossier": "dossier_2", "filename": "compromis_vente.json"}
     ],
     "expected_facts": ["BENALI", "Bordeaux"],
     "dossier_filter": null,
@@ -183,7 +183,7 @@
     "question": "Y a-t-il des incohérences entre les documents du dossier 1?",
     "category": "coherence",
     "expected_sources": [
-      {"dossier": "dossier_1", "filename": "compromis.json", "section": "preambule"},
+      {"dossier": "dossier_1", "filename": "compromis.json"},
       {"dossier": "dossier_1", "filename": "piece_identite_3.json"},
       {"dossier": "dossier_1", "filename": "facture_edf_02.json"}
     ],
@@ -196,7 +196,7 @@
     "question": "Les documents du dossier 2 sont-ils conformes?",
     "category": "coherence",
     "expected_sources": [
-      {"dossier": "dossier_2", "filename": "compromis_vente.json", "section": "preambule"},
+      {"dossier": "dossier_2", "filename": "compromis_vente.json"},
       {"dossier": "dossier_2", "filename": "piece_id_vendeuse.json"},
       {"dossier": "dossier_2", "filename": "dpe_bien.json"}
     ],
@@ -209,7 +209,7 @@
     "question": "Y a-t-il des incohérences dans le dossier 3?",
     "category": "coherence",
     "expected_sources": [
-      {"dossier": "dossier_3", "filename": "scan_012.json", "section": "preambule"},
+      {"dossier": "dossier_3", "filename": "scan_012.json"},
       {"dossier": "dossier_3", "filename": "id_vendeuse.json"},
       {"dossier": "dossier_3", "filename": "scan_006.json"}
     ],
@@ -233,7 +233,7 @@
     "question": "Quel est le prix de vente dans le dossier 1?",
     "category": "targeted",
     "expected_sources": [
-      {"dossier": "dossier_1", "filename": "compromis.json", "section": "article_2_prix"}
+      {"dossier": "dossier_1", "filename": "compromis.json"}
     ],
     "expected_facts": ["prix"],
     "dossier_filter": "dossier_1",

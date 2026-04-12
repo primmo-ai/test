@@ -19,7 +19,11 @@ DATASET_PATH = Path("evals/dataset.json")
 
 # --- Thresholds ---
 RECALL_THRESHOLD = 0.8
-PRECISION_THRESHOLD = 0.5
+# Precision is tracked but not asserted. With top_k=8 and most queries expecting
+# 1-2 sources, the best achievable precision is 0.12-0.25. Asserting precision
+# would either force an unrealistically low threshold or require artificially
+# inflating expected_sources. Precision remains in the results table as an
+# informational metric to detect retrieval noise regressions.
 
 
 def _source_matches(retrieved: dict, expected: dict) -> bool:
@@ -228,7 +232,4 @@ class TestRetrievalEvaluation:
         # Assert thresholds
         assert aggregates["recall"] >= RECALL_THRESHOLD, (
             f"Aggregate recall {aggregates['recall']:.2f} below threshold {RECALL_THRESHOLD}"
-        )
-        assert aggregates["precision"] >= PRECISION_THRESHOLD, (
-            f"Aggregate precision {aggregates['precision']:.2f} below threshold {PRECISION_THRESHOLD}"
         )
