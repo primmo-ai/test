@@ -143,3 +143,92 @@ class TestMetrics:
         retrieved = [self._chunk("dossier_1", "diag_dpe.json")]
         expected = [{"dossier": "dossier_1", "filename": "compromis.json"}]
         assert _compute_mrr(retrieved, expected) == 0.0
+
+
+# --- Main evaluation ---
+
+
+def _load_dataset() -> list[dict]:
+    """Load evaluation dataset from JSON file."""
+    with open(DATASET_PATH) as f:
+        return json.load(f)
+
+
+def _print_results_table(results: list[dict], aggregates: dict) -> None:
+    """Print a summary table of evaluation results."""
+    header = f"{'ID':<40} | {'Recall':>6} | {'Precision':>9} | {'MRR':>5}"
+    separator = "-" * 40 + "-+-" + "-" * 6 + "-+-" + "-" * 9 + "-+-" + "-" * 5
+    print("\nRetrieval Evaluation Results")
+    print("=" * len(header))
+    print(header)
+    print(separator)
+    for r in results:
+        print(f"{r['id']:<40} | {r['recall']:>6.2f} | {r['precision']:>9.2f} | {r['mrr']:>5.2f}")
+    print(separator)
+    print(f"{'AGGREGATE':<40} | {aggregates['recall']:>6.2f} | {aggregates['precision']:>9.2f} | {aggregates['mrr']:>5.2f}")
+    print("=" * len(header))
+
+
+@pytest.fixture(scope="module")
+def qdrant_available():
+    """Check that Qdrant is running and has data."""
+    from app.rag.vectorstore import collection_exists, get_collection_count
+
+    if not collection_exists():
+        pytest.skip("Qdrant collection not found — run ingestion first")
+    count = get_collection_count()
+    if count == 0:
+        pytest.skip("Qdrant collection is empty — run ingestion first")
+    return count
+
+
+@pytest.mark.eval
+class TestRetrievalEvaluation:
+    """Run the full retrieval evaluation against the ground truth dataset.
+
+    Requires Qdrant running with ingested documents.
+    Run with: pytest tests/test_eval_retrieval.py -v -m eval
+    Skip with: pytest tests/ -m "not eval"
+    """
+
+    def test_retrieval_quality(self, qdrant_available):
+        from app.rag.retriever import retrieve
+
+        dataset = _load_dataset()
+        results = []
+
+        for case in dataset:
+            chunks = retrieve(
+                question=case["question"],
+                dossier_override=case.get("dossier_filter"),
+                doc_types_override=[case["doc_type_filter"]] if case.get("doc_type_filter") else None,
+            )
+
+            recall = _compute_recall(chunks, case["expected_sources"])
+            precision = _compute_precision(chunks, case["expected_sources"])
+            mrr = _compute_mrr(chunks, case["expected_sources"])
+
+            results.append({
+                "id": case["id"],
+                "recall": recall,
+                "precision": precision,
+                "mrr": mrr,
+            })
+
+        # Compute aggregates
+        n = len(results)
+        aggregates = {
+            "recall": sum(r["recall"] for r in results) / n,
+            "precision": sum(r["precision"] for r in results) / n,
+            "mrr": sum(r["mrr"] for r in results) / n,
+        }
+
+        _print_results_table(results, aggregates)
+
+        # Assert thresholds
+        assert aggregates["recall"] >= RECALL_THRESHOLD, (
+            f"Aggregate recall {aggregates['recall']:.2f} below threshold {RECALL_THRESHOLD}"
+        )
+        assert aggregates["precision"] >= PRECISION_THRESHOLD, (
+            f"Aggregate precision {aggregates['precision']:.2f} below threshold {PRECISION_THRESHOLD}"
+        )
