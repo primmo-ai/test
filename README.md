@@ -152,6 +152,27 @@ Retourne le nombre de requetes, latence moyenne, cout total, budget restant.
 
 Retourne le statut d'ingestion (`ingesting`/`ready`/`error`), nombre de documents et chunks.
 
+## Tests
+
+### Tests unitaires
+
+```bash
+# Tous les tests unitaires (parser, chunker, metriques eval)
+pytest tests/ -m 'not eval'
+```
+
+### Evaluation du retriever
+
+La suite d'evaluation mesure la qualite du retrieval (recall, precision, MRR) contre un dataset de reference (`evals/dataset.json`). Elle ne necessite pas de LLM, uniquement Qdrant avec les documents ingeres.
+
+```bash
+# Demarrer Qdrant et lancer l'evaluation via le container app (pas besoin d'Ollama)
+docker compose up -d qdrant
+docker compose run --rm -e QDRANT_HOST=qdrant app python -m pytest tests/test_eval_retrieval.py -v -m eval -s
+```
+
+Le flag `-s` affiche le tableau de resultats avec les metriques par query et les aggregats.
+
 ## Choix techniques et arbitrages
 
 ### Qdrant comme base vectorielle
