@@ -278,7 +278,11 @@ Ci-dessous les ameliorations prioritaires pour une mise en production, classees 
   **Seuils d'evaluation** :
   - *Context Recall >= 0.8 (asserte)* : Metrique critique. Si le systeme ne retrouve pas les bons documents, le LLM ne peut pas produire de reponse correcte. 0.8 tolere 1 source manquante sur 5, mais pas des echecs systematiques. Pour un outil notarial, manquer un document pertinent (ex: une piece d'identite expiree) pourrait signifier rater un probleme de conformite.
   - *Context Precision (informationnel, non asserte)* : Avec top_k=8 et la plupart des queries attendant 1-2 sources, la meilleure precision atteignable est 0.12-0.25. Asserter la precision forcerait un seuil artificiellement bas ou gonflerait les expected_sources. La precision reste dans le tableau de resultats pour detecter des regressions de bruit dans le retrieval.
-- **Streaming SSE** : Les reponses longues (~75s avec Ollama, ~2s avec Claude) beneficieraient d'un streaming pour ameliorer l'UX. FastAPI supporte nativement `StreamingResponse`.
+- **Latence et UX** : Une requete typique prend ~10s (embedding 2.6s au cold start + Qdrant 40ms + LLM ~8s). Deux axes d'amelioration :
+
+  *Streaming SSE* : La majorite de la latence vient de l'attente de la reponse LLM complete. En streamant les tokens via `StreamingResponse` (FastAPI) + Server-Sent Events, l'utilisateur voit la reponse se construire en temps reel. Cela ne reduit pas la latence totale mais ameliore drastiquement la latence percue — le premier token arrive en ~500ms au lieu d'attendre ~8s.
+
+  *Cold start embedding* : Le premier appel charge le modele SentenceTransformer en memoire (~2.6s). Les appels suivants sont instantanes (~40ms). Ce cold start pourrait etre elimine en pre-chargeant le modele au demarrage (dans le lifespan FastAPI) plutot qu'au premier appel. Alternativement, la migration vers un modele ONNX reduirait le temps de chargement et la memoire.
 - **Multi-turn** : Ajouter un historique de conversation pour les follow-ups ("Et pour le dossier 2?"). Stocker les derniers messages et les inclure dans le contexte LLM.
 
 ### Moyenne priorite
